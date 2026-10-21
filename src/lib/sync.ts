@@ -69,12 +69,11 @@ export function normalizeCode(input: string): string | null {
   return `ZP-${raw.slice(0, 4)}-${raw.slice(4)}`;
 }
 
-function headers(b: Backend, code: string): Record<string, string> {
+function headers(b: Backend): Record<string, string> {
   return {
     apikey: b.key,
     Authorization: `Bearer ${b.key}`,
     'Content-Type': 'application/json',
-    'x-sync-code': code,
   };
 }
 
@@ -103,10 +102,11 @@ export interface RemoteState {
 }
 
 export async function pullRemote(b: Backend, code: string): Promise<RemoteState | null> {
-  const res = await request(
-    `${b.url}/rest/v1/sync_state?code=eq.${encodeURIComponent(code)}&select=payload,updated_at`,
-    { headers: headers(b, code) },
-  );
+  const res = await request(`${b.url}/rest/v1/rpc/get_sync_state`, {
+    method: 'POST',
+    headers: headers(b),
+    body: JSON.stringify({ p_code: code }),
+  });
   if (!res.ok) throw httpError(res.status);
   const rows = (await res.json()) as Array<{ payload: unknown; updated_at: string }>;
   if (!Array.isArray(rows) || rows.length === 0) return null;
@@ -115,12 +115,12 @@ export async function pullRemote(b: Backend, code: string): Promise<RemoteState 
 
 /** 整体覆盖写入，返回服务端时间戳。 */
 export async function pushRemote(b: Backend, code: string, store: Store): Promise<string> {
-  const res = await request(`${b.url}/rest/v1/sync_state?on_conflict=code`, {
+  const res = await request(`${b.url}/rest/v1/rpc/put_sync_state`, {
     method: 'POST',
-    headers: { ...headers(b, code), Prefer: 'resolution=merge-duplicates,return=representation' },
-    body: JSON.stringify([{ code, payload: store }]),
+    headers: headers(b),
+    body: JSON.stringify({ p_code: code, p_payload: store }),
   });
   if (!res.ok) throw httpError(res.status);
-  const rows = (await res.json()) as Array<{ updated_at?: string }>;
-  return rows[0]?.updated_at ?? new Date().toISOString();
+  const at = (await res.json()) as unknown;
+  return typeof at === 'string' ? at : new Date().toISOString();
 }

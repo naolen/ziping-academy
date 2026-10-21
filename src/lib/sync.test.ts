@@ -45,20 +45,22 @@ describe('后端解析', () => {
 });
 
 describe('远端读写', () => {
-  it('推送时带上同步码请求头，并整体覆盖', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify([{ updated_at: '2026-10-21T06:00:00Z' }]), { status: 201 }));
+  it('推送走 RPC，同步码放在请求体里（避免自定义头被跨域拦）', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify('2026-10-21T06:00:00Z'), { status: 200 }));
     vi.stubGlobal('fetch', fetchMock);
 
     const at = await pushRemote(backend, 'ZP-7K3M-9QX2', emptyStore());
     expect(at).toBe('2026-10-21T06:00:00Z');
 
     const [url, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
-    expect(url).toBe('https://demo.supabase.co/rest/v1/sync_state?on_conflict=code');
+    expect(url).toBe('https://demo.supabase.co/rest/v1/rpc/put_sync_state');
     expect(init.method).toBe('POST');
     const h = init.headers as Record<string, string>;
-    expect(h['x-sync-code']).toBe('ZP-7K3M-9QX2');
+    expect(h['x-sync-code']).toBeUndefined();
     expect(h.apikey).toBe('anon-key');
-    expect(JSON.parse(init.body as string)[0].code).toBe('ZP-7K3M-9QX2');
+    const body = JSON.parse(init.body as string);
+    expect(body.p_code).toBe('ZP-7K3M-9QX2');
+    expect(body.p_payload.total).toEqual({ right: 0, wrong: 0 });
   });
 
   it('拉取时解析 payload 并补全缺省字段', async () => {
@@ -69,6 +71,9 @@ describe('远端读写', () => {
     );
 
     const remote = await pullRemote(backend, 'ZP-7K3M-9QX2');
+    const [url, init] = (vi.mocked(fetch).mock.calls[0] as unknown) as [string, RequestInit];
+    expect(url).toBe('https://demo.supabase.co/rest/v1/rpc/get_sync_state');
+    expect(JSON.parse(init.body as string).p_code).toBe('ZP-7K3M-9QX2');
     expect(remote?.updatedAt).toBe('2026-10-21T07:00:00Z');
     expect(remote?.payload.total).toEqual({ right: 3, wrong: 1 });
     expect(remote?.payload.wrong).toEqual([]);
