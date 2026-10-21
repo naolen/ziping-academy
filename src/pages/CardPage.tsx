@@ -1,5 +1,6 @@
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { ShishenTable } from '../components/ShishenTable';
+import { VIZ } from '../components/visuals';
 import { KP } from '../data/knowledge';
 import { STAGES } from '../data/stages';
 import { useApp } from '../store/app';
@@ -19,6 +20,7 @@ export default function CardPage() {
   const prev = same[idx - 1];
   const next = same[idx + 1];
   const learned = Boolean(store.learned[kp.id]);
+  const Viz = VIZ[kp.id];
 
   return (
     <>
@@ -33,6 +35,7 @@ export default function CardPage() {
           <div className="reader-t">{kp.title}</div>
         </div>
         <div dangerouslySetInnerHTML={{ __html: kp.body }} />
+        {Viz && <Viz />}
         {kp.extra === 'shishen' && <ShishenTable />}
         <div className="reader-foot">
           <button className={`btn ${learned ? 'btn-g' : 'btn-p'}`} onClick={() => toggleLearned(kp.id)}>

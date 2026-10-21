@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { VIZ } from '../components/visuals';
 import { CURATED } from '../data/curated';
 import { KP } from '../data/knowledge';
 import { STAGES } from '../data/stages';
@@ -35,6 +36,14 @@ describe('内容数据', () => {
       const kp = KP.find((k) => k.id === c.kp);
       expect(kp, `知识点 ${c.kp} 不存在`).toBeTruthy();
       expect(kp?.stage, `${c.kp} 阶段不一致`).toBe(c.stage);
+    }
+  });
+
+  it('图解只挂在真实存在的知识卡上', () => {
+    const ids = new Set(KP.map((k) => k.id));
+    for (const key of Object.keys(VIZ)) {
+      expect(ids.has(key), `图解映射指向不存在的知识卡 ${key}`).toBe(true);
+      expect(typeof VIZ[key]).toBe('function');
     }
   });
 });
