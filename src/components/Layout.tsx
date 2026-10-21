@@ -16,6 +16,7 @@ const NAVS: NavItem[] = [
   { to: '/practice', name: '刷题', icon: 'target', match: ['/practice', '/quiz', '/result'] },
   { to: '/wrong', name: '错题本', icon: 'flag', match: ['/wrong'] },
   { to: '/stats', name: '统计', icon: 'chart', match: ['/stats'] },
+  { to: '/settings', name: '设置', icon: 'gear', match: ['/settings'] },
 ];
 
 export default function Layout() {

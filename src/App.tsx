@@ -7,6 +7,7 @@ import Practice from './pages/Practice';
 import Quiz from './pages/Quiz';
 import Result from './pages/Result';
 import StagePage from './pages/StagePage';
+import Settings from './pages/Settings';
 import Stats from './pages/Stats';
 import Wrong from './pages/Wrong';
 import { AppProvider } from './store/app';
@@ -29,6 +30,7 @@ export default function App() {
               <Route path="/result" element={<Result />} />
               <Route path="/wrong" element={<Wrong />} />
               <Route path="/stats" element={<Stats />} />
+              <Route path="/settings" element={<Settings />} />
               <Route path="*" element={<Navigate to="/home" replace />} />
             </Route>
           </Routes>

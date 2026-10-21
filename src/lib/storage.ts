@@ -12,7 +12,7 @@ export const emptyStore = (): Store => ({
   days: {},
 });
 
-function normalize(raw: unknown): Store {
+function normalizeStore(raw: unknown): Store {
   const s = (raw ?? {}) as Partial<Store>;
   const base = emptyStore();
   return {
@@ -24,13 +24,46 @@ function normalize(raw: unknown): Store {
   };
 }
 
+/** 校验并补全外部来源的进度数据（远端同步、导入文件）。 */
+export function parseStore(raw: unknown): Store {
+  return normalizeStore(raw);
+}
+
+/** 覆盖前留一份本机快照，供设置页回滚。 */
+const BACKUP_KEY = 'ziping-academy-backup-v1';
+
+export interface Backup {
+  at: number;
+  store: Store;
+}
+
+export function saveBackup(store: Store): void {
+  try {
+    localStorage.setItem(BACKUP_KEY, JSON.stringify({ at: Date.now(), store } satisfies Backup));
+  } catch {
+    /* 忽略 */
+  }
+}
+
+export function loadBackup(): Backup | null {
+  try {
+    const raw = localStorage.getItem(BACKUP_KEY);
+    if (!raw) return null;
+    const b = JSON.parse(raw) as Backup;
+    if (!b?.store) return null;
+    return { at: b.at, store: normalizeStore(b.store) };
+  } catch {
+    return null;
+  }
+}
+
 export function loadStore(): Store {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return normalize(JSON.parse(raw));
+    if (raw) return normalizeStore(JSON.parse(raw));
     // 旧版单文件应用的进度：一次导入，之后不再读取。
     const legacy = localStorage.getItem(LEGACY_KEY);
-    if (legacy) return normalize(JSON.parse(legacy));
+    if (legacy) return normalizeStore(JSON.parse(legacy));
   } catch {
     /* 存储损坏时退回空进度，不影响使用 */
   }

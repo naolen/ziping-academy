@@ -4,6 +4,7 @@ const PATHS = {
   target: '<circle cx="8" cy="8" r="5.4"/><circle cx="8" cy="8" r="2.2"/>',
   flag: '<path d="M4 2.5v11M4 3.2h7.4l-1.6 2.4 1.6 2.4H4"/>',
   chart: '<path d="M3 13V9M6.4 13V5.5M9.8 13V7.5M13.2 13V3.5"/>',
+  gear: '<path d="M2.5 5.5h11M2.5 10.5h11"/><circle cx="6" cy="5.5" r="1.7"/><circle cx="10" cy="10.5" r="1.7"/>',
 } as const;
 
 export type IconName = keyof typeof PATHS;
