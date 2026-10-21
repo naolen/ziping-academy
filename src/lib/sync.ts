@@ -7,9 +7,6 @@ const CODE_ALPHABET = '23456789ABCDEFGHJKMNPQRSTUVWXYZ'; // 去掉 0/O、1/I/L�
 export interface SyncSettings {
   /** 本机是否已加入同步；null 表示纯本地 */
   code: string | null;
-  /** 自定义后端，留空则用构建时注入的默认值 */
-  url: string;
-  key: string;
   /** 上次同步成功时服务端返回的时间戳 */
   lastSync: string | null;
 }
@@ -19,19 +16,14 @@ export interface Backend {
   key: string;
 }
 
-export const emptySync = (): SyncSettings => ({ code: null, url: '', key: '', lastSync: null });
+export const emptySync = (): SyncSettings => ({ code: null, lastSync: null });
 
 export function loadSync(): SyncSettings {
   try {
     const raw = localStorage.getItem(SETTINGS_KEY);
     if (!raw) return emptySync();
     const s = JSON.parse(raw) as Partial<SyncSettings>;
-    return {
-      code: s.code ?? null,
-      url: s.url ?? '',
-      key: s.key ?? '',
-      lastSync: s.lastSync ?? null,
-    };
+    return { code: s.code ?? null, lastSync: s.lastSync ?? null };
   } catch {
     return emptySync();
   }
@@ -45,10 +37,13 @@ export function saveSync(s: SyncSettings): void {
   }
 }
 
-/** 构建时注入的默认后端；用户可在设置页覆盖。 */
-export function resolveBackend(s: SyncSettings): Backend | null {
-  const url = (s.url || import.meta.env.VITE_SYNC_URL || '').replace(/\/+$/, '');
-  const key = s.key || import.meta.env.VITE_SYNC_KEY || '';
+/**
+ * 后端只从构建时注入的环境变量读取，不出现在页面上。
+ * 维护者在 .env.local 或仓库 Secrets 里配置 VITE_SYNC_URL / VITE_SYNC_KEY。
+ */
+export function resolveBackend(): Backend | null {
+  const url = (import.meta.env.VITE_SYNC_URL || '').replace(/\/+$/, '');
+  const key = import.meta.env.VITE_SYNC_KEY || '';
   if (!url || !key) return null;
   return { url, key };
 }

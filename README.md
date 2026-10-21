@@ -39,8 +39,11 @@
 1. 在 [supabase.com](https://supabase.com) 新建项目。
 2. 打开 SQL Editor，执行 [`supabase/schema.sql`](./supabase/schema.sql)。
 3. 在 Project Settings → API 复制 **Project URL** 与 **anon public key**（新版控制台里叫 **Publishable key**，以 `sb_publishable_` 开头）。
-4. 打开应用的「设置」页，把这两项填进去，点「在这台设备创建同步码」。
-5. 另一台设备同样填后端配置，选择「输入已有同步码」，输入同一串码即可。
+4. 把这两个值注入构建环境——**页面上不提供填写入口**：
+   - 本地开发：项目根目录建 `.env.local`，写入 `VITE_SYNC_URL` 与 `VITE_SYNC_KEY`。
+   - 部署到 GitHub Pages：在仓库 Settings → Secrets 里配置同名变量。
+5. 重新构建/部署后，打开应用的「设置」页，点「在这台设备创建同步码」。
+6. 另一台设备打开同一网址，选择「输入已有同步码」，输入同一串码即可。
 
 **同步码就是钥匙。** 表对匿名用户完全关闭（不建 RLS 策略，并收回表权限），读写只能通过两个 `security definer` 函数，必须传入正确的码才能命中对应行。所以即使拿着公开的 anon key，没有码也读不到、写不了任何一行。码不要公开发出去。
 
@@ -56,7 +59,7 @@ npm run check:sync -- --url https://xxxx.supabase.co --key eyJhbGciOi...
 
 它会依次验证：写入、用同一个码读回、错误码读不到、表不能被匿名列举。四项都过才说明配置正确。
 
-**把后端写进部署**（这样打开网址就能直接同步，不用每人手填）：在仓库 Settings → Secrets 里加 `VITE_SYNC_URL` 和 `VITE_SYNC_KEY`，构建时注入。
+**为什么不在页面上填**：后端地址和密钥属于部署配置，不是使用配置。写进页面会让每个访客都看到一套运维参数，也容易误改导致同步失效。未配置后端时应用照常可用，只是同步入口会显示「这个站点没有接同步后端」。
 
 ## 技术栈
 

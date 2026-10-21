@@ -49,7 +49,6 @@ interface AppApi {
   joinSync: (input: string) => Promise<string | null>;
   syncNow: () => Promise<void>;
   disconnect: () => void;
-  setBackend: (url: string, key: string) => void;
   restoreBackup: () => void;
   exportData: () => void;
   importData: (text: string) => boolean;
@@ -84,7 +83,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /** 本地改动 → 1.5 秒防抖后推送到云端。 */
   useEffect(() => {
     if (!sync.code) return;
-    const backend = resolveBackend(sync);
+    const backend = resolveBackend();
     if (!backend) return;
     const serialized = JSON.stringify(store);
     if (serialized === pushedRef.current) return;
@@ -106,7 +105,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   /** 打开页面、切回标签页时拉取远端更新。 */
   useEffect(() => {
     if (!sync.code) return;
-    const backend = resolveBackend(sync);
+    const backend = resolveBackend();
     if (!backend) return;
     const code = sync.code;
     let cancelled = false;
@@ -152,7 +151,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       cancelled = true;
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [sync.code, sync.url, sync.key]);
+  }, [sync.code]);
 
   const record = useCallback((q: Question, ok: boolean) => {
     setStore((s) => applyAnswer(s, q, ok));
@@ -174,12 +173,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const clearWrong = useCallback(() => setStore((s) => ({ ...s, wrong: [] })), []);
   const resetAll = useCallback(() => setStore(emptyStore()), []);
 
-  const setBackend = useCallback((url: string, key: string) => {
-    setSync((s) => ({ ...s, url: url.trim(), key: key.trim() }));
-  }, []);
-
   const createSync = useCallback(async () => {
-    const backend = resolveBackend(syncRef.current);
+    const backend = resolveBackend();
     if (!backend) {
       setSyncStatus({ kind: 'error', msg: '还没有配置后端地址与密钥' });
       return;
@@ -197,7 +192,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const joinSync = useCallback(async (input: string): Promise<string | null> => {
-    const backend = resolveBackend(syncRef.current);
+    const backend = resolveBackend();
     if (!backend) return '还没有配置后端地址与密钥';
     const code = normalizeCode(input);
     if (!code) return '同步码格式不对，应为 ZP-XXXX-XXXX';
@@ -226,7 +221,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const syncNow = useCallback(async () => {
-    const backend = resolveBackend(syncRef.current);
+    const backend = resolveBackend();
     const code = syncRef.current.code;
     if (!backend || !code) return;
     try {
@@ -300,13 +295,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
       progress: Math.round((learned / KP.length) * 100),
       sync,
       syncStatus,
-      backendReady: Boolean(resolveBackend(sync)),
+      backendReady: Boolean(resolveBackend()),
       backup,
       createSync,
       joinSync,
       syncNow,
       disconnect,
-      setBackend,
       restoreBackup,
       exportData,
       importData,
@@ -326,7 +320,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       joinSync,
       syncNow,
       disconnect,
-      setBackend,
       restoreBackup,
       exportData,
       importData,

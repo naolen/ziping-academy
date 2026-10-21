@@ -6,6 +6,7 @@ const backend = { url: 'https://demo.supabase.co', key: 'anon-key' };
 
 afterEach(() => {
   vi.unstubAllGlobals();
+  vi.unstubAllEnvs();
 });
 
 describe('同步码', () => {
@@ -31,16 +32,20 @@ describe('同步码', () => {
 });
 
 describe('后端解析', () => {
-  it('优先使用本机覆盖配置', () => {
-    expect(resolveBackend({ code: null, url: 'https://a.co/', key: 'k', lastSync: null })).toEqual({
-      url: 'https://a.co',
-      key: 'k',
-    });
+  it('只从构建时环境变量读取，并去掉末尾斜杠', () => {
+    vi.stubEnv('VITE_SYNC_URL', 'https://a.co/');
+    vi.stubEnv('VITE_SYNC_KEY', 'k');
+    expect(resolveBackend()).toEqual({ url: 'https://a.co', key: 'k' });
   });
 
   it('缺少地址或密钥时返回 null', () => {
-    expect(resolveBackend({ code: null, url: '', key: '', lastSync: null })).toBeNull();
-    expect(resolveBackend({ code: null, url: 'https://a.co', key: '', lastSync: null })).toBeNull();
+    vi.stubEnv('VITE_SYNC_URL', '');
+    vi.stubEnv('VITE_SYNC_KEY', '');
+    expect(resolveBackend()).toBeNull();
+
+    vi.stubEnv('VITE_SYNC_URL', 'https://a.co');
+    vi.stubEnv('VITE_SYNC_KEY', '');
+    expect(resolveBackend()).toBeNull();
   });
 });
 
