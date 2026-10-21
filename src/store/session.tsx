@@ -59,34 +59,31 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     navigate('/quiz');
   }, [store.wrong, navigate]);
 
+  // 副作用（记分、写错题本）放在 updater 之外，避免 StrictMode 下 updater 重复执行导致重复计分。
   const submit = useCallback(
     (sel: string[]) => {
-      setSession((s) => {
-        if (!s) return s;
-        const q = s.list[s.i];
-        const ok = isCorrect(q, sel);
-        record(q, ok);
-        return {
-          ...s,
-          right: s.right + (ok ? 1 : 0),
-          log: [...s.log, { q, sel, ok }],
-        };
+      if (!session) return;
+      const q = session.list[session.i];
+      if (!q) return;
+      const ok = isCorrect(q, sel);
+      record(q, ok);
+      setSession({
+        ...session,
+        right: session.right + (ok ? 1 : 0),
+        log: [...session.log, { q, sel, ok }],
       });
     },
-    [record],
+    [session, record],
   );
 
   const next = useCallback(() => {
-    setSession((s) => {
-      if (!s) return s;
-      const i = s.i + 1;
-      if (i >= s.list.length) {
-        navigate('/result');
-        return s;
-      }
-      return { ...s, i };
-    });
-  }, [navigate]);
+    if (!session) return;
+    if (session.i + 1 >= session.list.length) {
+      navigate('/result');
+      return;
+    }
+    setSession({ ...session, i: session.i + 1 });
+  }, [session, navigate]);
 
   const value = useMemo<SessionApi>(
     () => ({ session, start, startWrong, submit, next }),
