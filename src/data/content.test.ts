@@ -46,6 +46,11 @@ describe('内容数据', () => {
       expect(typeof VIZ[key]).toBe('function');
     }
   });
+
+  it('每张知识卡都配了图解', () => {
+    const missing = KP.filter((k) => !VIZ[k.id]).map((k) => `${k.id} ${k.title}`);
+    expect(missing, `缺图的知识卡：${missing.join('、')}`).toEqual([]);
+  });
 });
 
 describe('判分', () => {

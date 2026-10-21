@@ -1,3 +1,5 @@
+import { CANG, KE, SHENG, WX } from '../../data/tables';
+import { WX_COLOR, ganColor } from './palette';
 import { Figure, polar, shorten } from './shared';
 
 /* ---------------- 五行生克 ---------------- */
@@ -7,13 +9,9 @@ const CY = 170;
 const R = 112;
 const NR = 26;
 
-const WUXING = [
-  { g: '木', deg: -90, color: '#2F6B5A' },
-  { g: '火', deg: -18, color: '#9C3A2A' },
-  { g: '土', deg: 54, color: '#A9762F' },
-  { g: '金', deg: 126, color: '#6E6A60' },
-  { g: '水', deg: 198, color: '#33556E' },
-];
+/** WX 的顺序本身就是相生顺序：木 火 土 金 水 */
+const NODES = WX.map((w, i) => ({ g: w, deg: -90 + i * 72, color: WX_COLOR[w] }));
+const nodeOf = (g: string) => NODES.find((n) => n.g === g) ?? NODES[0];
 
 export function WuxingCycle() {
   return (
@@ -25,9 +23,9 @@ export function WuxingCycle() {
           </marker>
         </defs>
 
-        {WUXING.map((n, i) => {
+        {NODES.map((n) => {
           const a = polar(CX, CY, R, n.deg);
-          const b = polar(CX, CY, R, WUXING[(i + 2) % 5].deg);
+          const b = polar(CX, CY, R, nodeOf(KE[n.g]).deg);
           const s = shorten(a, b, NR + 4);
           return (
             <line
@@ -44,9 +42,9 @@ export function WuxingCycle() {
           );
         })}
 
-        {WUXING.map((n, i) => {
+        {NODES.map((n) => {
           const a = polar(CX, CY, R, n.deg);
-          const b = polar(CX, CY, R, WUXING[(i + 1) % 5].deg);
+          const b = polar(CX, CY, R, nodeOf(SHENG[n.g]).deg);
           const s = shorten(a, b, NR + 4);
           return (
             <g key={`sheng-${n.g}`}>
@@ -75,7 +73,7 @@ export function WuxingCycle() {
           );
         })}
 
-        {WUXING.map((n) => {
+        {NODES.map((n) => {
           const p = polar(CX, CY, R, n.deg);
           return (
             <g key={n.g}>
@@ -93,18 +91,22 @@ export function WuxingCycle() {
 
 /* ---------------- 藏干层次 ---------------- */
 
-const CANG_ROWS = [
-  { k: '本气', g: '甲', w: 168, note: '决定该支的主要性质' },
-  { k: '中气', g: '丙', w: 104, note: '次要成分' },
-  { k: '余气', g: '戊', w: 56, note: '上一节气的残余' },
-];
+/** 以「寅」为例，三个层次的名字与力度条宽度是固定的，具体藏什么干由 CANG 表决定 */
+const CANG_EX = '寅';
+const CANG_ROWS = CANG[CANG_EX].map((g, i) => ({
+  k: ['本气', '中气', '余气'][i],
+  g,
+  w: [168, 104, 56][i],
+  note: ['决定该支的主要性质', '次要成分', '上一节气的残余'][i],
+  c: ganColor(g),
+}));
 
 export function Canggan() {
   return (
     <Figure caption="十二支各藏 1–3 个天干。本气最重，决定这一支的基本性质；中气、余气是次要成分。看藏干时先看本气，再论中气、余气。">
       <svg viewBox="0 0 560 250" role="img" aria-label="地支藏干的本气、中气、余气层次">
         <text x="20" y="30" fontSize="13" fill="#57544C">
-          地支「寅」的藏干
+          地支「{CANG_EX}」的藏干
         </text>
         <text x="150" y="30" fontSize="11.5" fill="#928E82">
           由强到弱
@@ -117,8 +119,8 @@ export function Canggan() {
               <text x="20" y={y + 17} fontSize="12" fill="#928E82" letterSpacing="1">
                 {r.k}
               </text>
-              <rect x="78" y={y} width="34" height="34" rx="8" fill="#F8EEEB" stroke="#E3C9C2" />
-              <text x="95" y={y + 18} textAnchor="middle" dominantBaseline="central" fontSize="18" fill="#9C3A2A" fontFamily='"Songti SC","SimSun",serif'>
+              <rect x="78" y={y} width="34" height="34" rx="8" fill="#fff" stroke={r.c} strokeWidth="1.2" />
+              <text x="95" y={y + 18} textAnchor="middle" dominantBaseline="central" fontSize="18" fill={r.c} fontFamily='"Songti SC","SimSun",serif'>
                 {r.g}
               </text>
               <rect
@@ -129,8 +131,8 @@ export function Canggan() {
                 width={r.w}
                 height="22"
                 rx="11"
-                fill={i === 0 ? '#9C3A2A' : i === 1 ? '#B4726A' : '#CFA9A2'}
-                opacity={i === 0 ? 0.9 : 0.65}
+                fill={r.c}
+                opacity={i === 0 ? 0.85 : i === 1 ? 0.55 : 0.32}
               />
               <text x={132 + r.w} y={y + 18} dominantBaseline="central" fontSize="11" fill="#928E82">
                 {r.note}
@@ -141,7 +143,7 @@ export function Canggan() {
 
         <line x1="20" y1="220" x2="540" y2="220" stroke="#E7E3D8" />
         <text x="20" y="240" fontSize="11" fill="#928E82">
-          子藏癸（1 个）· 寅藏甲丙戊（3 个）· 午藏丁己（2 个）
+          {['子', '寅', '午'].map((z) => `${z}藏${CANG[z].join('')}（${CANG[z].length} 个）`).join(' · ')}
         </text>
       </svg>
     </Figure>

@@ -17,6 +17,8 @@ export const CANG: Record<string, string[]> = {
 };
 export const CHONG: Record<string, string> = {子:'午',午:'子',丑:'未',未:'丑',寅:'申',申:'寅',卯:'酉',酉:'卯',辰:'戌',戌:'辰',巳:'亥',亥:'巳'};
 export const LIUHE: Record<string, string> = {子:'丑',丑:'子',寅:'亥',亥:'寅',卯:'戌',戌:'卯',辰:'酉',酉:'辰',巳:'申',申:'巳',午:'未',未:'午'};
+/** 六合化气，键为按 ZHI 顺序排好的两支 */
+export const LIUHE_WX: Record<string, string> = {子丑:'土',寅亥:'木',卯戌:'火',辰酉:'金',巳申:'水',午未:'土'};
 export const LIUHAI: Record<string, string> = {子:'未',未:'子',丑:'午',午:'丑',寅:'巳',巳:'寅',卯:'辰',辰:'卯',申:'亥',亥:'申',酉:'戌',戌:'酉'};
 export const SANHE: string[][] = [['申','子','辰','水'],['亥','卯','未','木'],['寅','午','戌','火'],['巳','酉','丑','金']];
 export const SANHUI: string[][] = [['寅','卯','辰','木'],['巳','午','未','火'],['申','酉','戌','金'],['亥','子','丑','水']];
@@ -27,3 +29,15 @@ export const GANHE_WX: Record<string, string> = {甲:'土',己:'土',乙:'金',�
 export const WUHU: Record<string, string> = {甲:'丙',己:'丙',乙:'戊',庚:'戊',丙:'庚',辛:'庚',丁:'壬',壬:'壬',戊:'甲',癸:'甲'};
 export const WUSHU: Record<string, string> = {甲:'甲',己:'甲',乙:'丙',庚:'丙',丙:'戊',辛:'戊',丁:'庚',壬:'庚',戊:'壬',癸:'壬'};
 export const JIAZI: string[] = (() => { const a: string[] = []; for (let i = 0; i < 60; i++) a.push(GAN[i % 10] + ZHI[i % 12]); return a; })();
+
+/** 十二支对应的时辰区间 */
+export const ZHI_HOUR: Record<string, string> = {
+  子:'23–01', 丑:'01–03', 寅:'03–05', 卯:'05–07', 辰:'07–09', 巳:'09–11',
+  午:'11–13', 未:'13–15', 申:'15–17', 酉:'17–19', 戌:'19–21', 亥:'21–23',
+};
+
+/** 十二支对应的农历月令 */
+export const ZHI_MONTH: Record<string, string> = {
+  子:'十一月', 丑:'十二月', 寅:'正月', 卯:'二月', 辰:'三月', 巳:'四月',
+  午:'五月', 未:'六月', 申:'七月', 酉:'八月', 戌:'九月', 亥:'十月',
+};

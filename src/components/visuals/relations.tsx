@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { CHONG, LIUHAI, LIUHE, LIUHE_WX, SANHE, SANHUI, SANXING, ZHI } from '../../data/tables';
+import { CONFLICT, HARM, WX_COLOR, zhiColor } from './palette';
 import { Figure, polar, shorten } from './shared';
 
-/* ---------------- 地支关系盘 ---------------- */
+/* ---------------- 地支关系盘（全部由 tables.ts 的关系表生成） ---------------- */
 
-const BRANCHES = ['子', '丑', '寅', '卯', '辰', '巳', '午', '未', '申', '酉', '戌', '亥'];
 const CX = 280;
 const CY = 196;
 const R = 122;
@@ -11,7 +12,7 @@ const NR = 21;
 const AR = R + 30;
 
 /** 子居正上，顺时针排十二支：子 -90° → 丑 -60° → 寅 -30° …… */
-const degOf = (b: string) => BRANCHES.indexOf(b) * 30 - 90;
+const degOf = (b: string) => ZHI.indexOf(b) * 30 - 90;
 
 interface Grp {
   m: string[];
@@ -24,98 +25,88 @@ interface ModeDef {
   caption: string;
   groups: Grp[];
   dashed?: boolean;
-  /** 自刑：单独加虚线外圈 */
   self?: string[];
-  /** 是否按所属组给节点上色（十二支全参与的配对模式不上色，否则整圈同色） */
   tint?: boolean;
   legend?: string;
 }
 
-const JADE = '#2F6B5A';
-const FIRE = '#9C3A2A';
-const EARTH = '#A9762F';
-const METAL = '#6E6A60';
-const WATER = '#33556E';
+/** 按十二支顺序把一对支排成固定键，用于查六合化气 */
+const pairKey = (a: string, b: string) => (ZHI.indexOf(a) <= ZHI.indexOf(b) ? a + b : b + a);
+
+/** 从「支 → 对应支」的映射还原出不重复的配对 */
+function pairs(map: Record<string, string>, color: (a: string, b: string) => string): Grp[] {
+  const seen = new Set<string>();
+  const out: Grp[] = [];
+  for (const a of ZHI) {
+    const b = map[a];
+    if (!b) continue;
+    const k = pairKey(a, b);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push({ m: [a, b], c: color(a, b) });
+  }
+  return out;
+}
+
+/** 三合 / 三会：每组是「三支 + 化气五行」 */
+const triple = (rows: string[][], kind: 'poly' | 'arc'): Grp[] =>
+  rows.map((r) => ({ m: r.slice(0, 3), c: WX_COLOR[r[3]] ?? '#57544C', kind }));
+
+const legendOf = (rows: string[][]) => rows.map((r) => `${r.slice(0, 3).join('')}·${r[3]}`).join('　');
+
+/** 三刑：前三组是刑，最后一组四个支是自刑 */
+const xingGroups: Grp[] = [];
+const xingSelf: string[] = [];
+for (const s of SANXING) {
+  const m = s.split('');
+  if (m.length >= 4) xingSelf.push(...m);
+  else xingGroups.push({ m, c: zhiColor(m[0]), kind: m.length === 3 ? 'poly' : 'line' });
+}
 
 const MODES: Record<string, ModeDef> = {
   chong: {
     label: '六冲',
     caption:
       '六冲是十二支里正对的两支：子在正上、午在正下，一冲一对。冲代表位置对立、力量相激，不是「一定不好」，是「容易变动」。',
-    groups: [
-      { m: ['子', '午'], c: FIRE },
-      { m: ['丑', '未'], c: FIRE },
-      { m: ['寅', '申'], c: FIRE },
-      { m: ['卯', '酉'], c: FIRE },
-      { m: ['辰', '戌'], c: FIRE },
-      { m: ['巳', '亥'], c: FIRE },
-    ],
+    groups: pairs(CHONG, () => CONFLICT),
     dashed: true,
   },
   he: {
     label: '六合',
     caption:
-      '六合是相邻两支的配对，合而成另一种五行：子丑合土、寅亥合木、卯戌合火、辰酉合金、巳申合水、午未合土（一说合火）。合代表牵绊、粘合。',
-    groups: [
-      { m: ['子', '丑'], c: JADE },
-      { m: ['寅', '亥'], c: JADE },
-      { m: ['卯', '戌'], c: JADE },
-      { m: ['辰', '酉'], c: JADE },
-      { m: ['巳', '申'], c: JADE },
-      { m: ['午', '未'], c: JADE },
-    ],
+      '六合是相邻两支的配对，合而成另一种五行 —— 线的颜色就是合化之后的五行：子丑合土、寅亥合木、卯戌合火、辰酉合金、巳申合水、午未合土（一说合火）。合代表牵绊、粘合。',
+    groups: pairs(LIUHE, (a, b) => WX_COLOR[LIUHE_WX[pairKey(a, b)]] ?? '#57544C'),
   },
   hai: {
     label: '六害',
     caption:
       '六害（也叫六穿）是六合的「对家」被冲开后形成的暗损：子丑合被午未冲，于是子未相害。害代表暗中的损耗，比冲隐蔽。',
-    groups: [
-      { m: ['子', '未'], c: EARTH },
-      { m: ['丑', '午'], c: EARTH },
-      { m: ['寅', '巳'], c: EARTH },
-      { m: ['卯', '辰'], c: EARTH },
-      { m: ['申', '亥'], c: EARTH },
-      { m: ['酉', '戌'], c: EARTH },
-    ],
+    groups: pairs(LIUHAI, () => HARM),
     dashed: true,
   },
   sanhe: {
     label: '三合',
     caption:
       '三合是隔三位取一支，凑成一股完整的力量：申子辰合水、亥卯未合木、寅午戌合火、巳酉丑合金。三支齐全叫「三合局」，缺一支叫「半合」。',
-    groups: [
-      { m: ['申', '子', '辰'], c: WATER, kind: 'poly' },
-      { m: ['亥', '卯', '未'], c: JADE, kind: 'poly' },
-      { m: ['寅', '午', '戌'], c: FIRE, kind: 'poly' },
-      { m: ['巳', '酉', '丑'], c: METAL, kind: 'poly' },
-    ],
+    groups: triple(SANHE, 'poly'),
     tint: true,
-    legend: '申子辰·水　亥卯未·木　寅午戌·火　巳酉丑·金',
+    legend: legendOf(SANHE),
   },
   sanhui: {
     label: '三会',
     caption:
       '三会是同一方位、连着的三支，凑成一个季节：寅卯辰会东方木（春）、巳午未会南方火（夏）、申酉戌会西方金（秋）、亥子丑会北方水（冬）。三会的力量比三合更直接。',
-    groups: [
-      { m: ['寅', '卯', '辰'], c: JADE, kind: 'arc' },
-      { m: ['巳', '午', '未'], c: FIRE, kind: 'arc' },
-      { m: ['申', '酉', '戌'], c: METAL, kind: 'arc' },
-      { m: ['亥', '子', '丑'], c: WATER, kind: 'arc' },
-    ],
+    groups: triple(SANHUI, 'arc'),
     tint: true,
-    legend: '寅卯辰·东方木　巳午未·南方火　申酉戌·西方金　亥子丑·北方水',
+    legend: legendOf(SANHUI),
   },
   sanxing: {
     label: '三刑',
     caption:
       '三刑有三组：寅巳申（无恩之刑）、丑戌未（恃势之刑）、子卯（无礼之刑），另有辰午酉亥各自刑自己。刑代表内部的摩擦与自我消耗。',
-    groups: [
-      { m: ['寅', '巳', '申'], c: FIRE, kind: 'poly' },
-      { m: ['丑', '戌', '未'], c: EARTH, kind: 'poly' },
-      { m: ['子', '卯'], c: METAL },
-    ],
+    groups: xingGroups,
     tint: true,
-    self: ['辰', '午', '酉', '亥'],
+    self: xingSelf,
   },
 };
 
@@ -171,14 +162,7 @@ export function BranchDial() {
           };
 
           if (g.kind === 'arc') {
-            return (
-              <path
-                key={g.m.join('')}
-                d={arcPath(g.m[0], g.m[g.m.length - 1], AR)}
-                strokeWidth="6"
-                {...common}
-              />
-            );
+            return <path key={g.m.join('')} d={arcPath(g.m[0], g.m[g.m.length - 1], AR)} strokeWidth="6" {...common} />;
           }
           if (g.kind === 'poly') {
             return (
@@ -191,24 +175,14 @@ export function BranchDial() {
             );
           }
           const s = shorten(pts[0], pts[1], NR + 3);
-          return (
-            <line
-              key={g.m.join('')}
-              x1={s.x1}
-              y1={s.y1}
-              x2={s.x2}
-              y2={s.y2}
-              strokeWidth="2"
-              {...common}
-            />
-          );
+          return <line key={g.m.join('')} x1={s.x1} y1={s.y1} x2={s.x2} y2={s.y2} strokeWidth="2" {...common} />;
         })}
 
-        {BRANCHES.map((b, i) => {
+        {ZHI.map((b, i) => {
           const p = polar(CX, CY, R, i * 30 - 90);
           const grpColor = def.tint ? def.groups.find((g) => g.m.includes(b))?.c : undefined;
           const hot = active.has(b);
-          const col = hot ? (def.groups.find((g) => g.m.includes(b))?.c ?? FIRE) : grpColor;
+          const col = hot ? (def.groups.find((g) => g.m.includes(b))?.c ?? CONFLICT) : grpColor;
           const isSelf = def.self?.includes(b);
           const faded = dimming && !hot;
 
@@ -220,22 +194,13 @@ export function BranchDial() {
             >
               <title>{b}</title>
               {isSelf && (
-                <circle
-                  cx={p.x}
-                  cy={p.y}
-                  r={NR + 6}
-                  fill="none"
-                  stroke={FIRE}
-                  strokeWidth="1.2"
-                  strokeDasharray="3 3"
-                  opacity="0.65"
-                />
+                <circle cx={p.x} cy={p.y} r={NR + 6} fill="none" stroke={CONFLICT} strokeWidth="1.2" strokeDasharray="3 3" opacity="0.65" />
               )}
               <circle
                 cx={p.x}
                 cy={p.y}
                 r={NR}
-                fill={hot ? (col ?? FIRE) : '#fff'}
+                fill={hot ? (col ?? CONFLICT) : '#fff'}
                 stroke={col ?? '#DFD9CA'}
                 strokeWidth={col ? 2 : 1.1}
               />
