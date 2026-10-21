@@ -38,7 +38,7 @@
 
 1. 在 [supabase.com](https://supabase.com) 新建项目。
 2. 打开 SQL Editor，执行 [`supabase/schema.sql`](./supabase/schema.sql)。
-3. 在 Project Settings → API 复制 **Project URL** 与 **anon public key**。
+3. 在 Project Settings → API 复制 **Project URL** 与 **anon public key**（新版控制台里叫 **Publishable key**，以 `sb_publishable_` 开头）。
 4. 打开应用的「设置」页，把这两项填进去，点「在这台设备创建同步码」。
 5. 另一台设备同样填后端配置，选择「输入已有同步码」，输入同一串码即可。
 
